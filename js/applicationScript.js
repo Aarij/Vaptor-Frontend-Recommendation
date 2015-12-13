@@ -36,28 +36,18 @@ $(document).ready(function() {
 	//init();	
 	client = new iwc.Client();
 	  
-	/*var iwcCallback = function(intent) {
+	var iwcCallback = function(intent) {
 		// define your reactions on incoming iwc events here
-		console.log("ecommendation widget"+intent.data);
-		if (intent.action == "getVideos"){
-			console.log("Player widget Inside: "+intent.data);
-			document.getElementById("videonamedisplay").innerHTML = "";
-			document.getElementById("videodisplay").innerHTML = "";
-			//document.getElementById("annotationdisplay").innerHTML = "";
-			flushLists();
-			postGetVideos(intent.data);
-		}
-		if (intent.action == "playVideo"){
-		
-			
-			lifemirror.playVideo(intent.data);
-			
+		if (intent.action == "getRelatedSearch"){
+			//console.log("Recommendation widget Inside: "+intent.data);
+			getRelatedSearch(localStorage.access_token, intent.data, postGetRecommendations);
+			//postGetRecommendations(intent.data);
 		}
 		
 	};
-	client.connect(iwcCallback);*/
+	client.connect(iwcCallback);
 	
-	//console.log("In callback Recommendation widget");
+	////console.log("In callback Recommendation widget");
 	
 	if(localStorage.access_token!=null){
 		
@@ -73,17 +63,15 @@ $(document).ready(function() {
 					document.getElementById("notification").innerHTML = "";
 					var jsonData = JSON.parse(value);
 					username = jsonData.preferred_username.toString();
-					console.log("user from verification: "+username);
+					//console.log("user from verification: "+username);
 					getRecommendations(localStorage.access_token, postGetRecommendations);
 				},
 				statusCode: {
 					401: function() {
-						//alert("ERROR! Please login again.");
 						document.getElementById("notification").innerHTML = "<span style=\"background:#C90016; float:left; color:#FFF; width:100%; text-align:center;\">You are not logged in!</span>";
 						
 					},
 					404: function() {
-						//alert("ERROR! Please login again.");
 						document.getElementById("notification").innerHTML = "<span style=\"background:#C90016; float:left; color:#FFF; width:100%; text-align:center;\">Something went wrong, please try again!</span>";
 						
 					}
@@ -109,6 +97,35 @@ $(document).ready(function() {
 				success: postGetRecommendations,
 				statusCode: {
 					401: function() {
+						document.getElementById("notification").innerHTML = "<span style=\"background:#C90016; float:left; color:#FFF; width:100%; text-align:center;\">You are not logged in!</span>";
+					},
+					404: function() {
+						document.getElementById("notification").innerHTML = "<span style=\"background:#C90016; float:left; color:#FFF; width:100%; text-align:center;\">Something went wrong, please try again!</span>";
+					}
+					
+				},
+				error: function(e){console.log(e);}
+			});
+
+
+		}
+		
+		function getRelatedSearch(access_token, searchString, postGetRecommendations){
+			//if(window.mobilecheck()){
+				var uri = "http://eiche.informatik.rwth-aachen.de:7078/recommendation/relatedSearch?Authorization=Bearer "+access_token+"&search="+searchString;
+				//var uri = "http://eiche.informatik.rwth-aachen.de:7078/recommendation?Authorization=Bearer "+access_token+"&mobile="+window.mobilecheck();
+			/*}
+			else{
+				var uri = "http://eiche.informatik.rwth-aachen.de:7078/recommendation?Authorization=Bearer "+access_token;
+			}*/
+
+			$.ajax({
+				url: uri,
+				type: "GET",
+				dataType:'text',
+				success: postGetRecommendations,
+				statusCode: {
+					401: function() {
 						//alert("ERROR! Please login again.");
 						document.getElementById("notification").innerHTML = "<span style=\"background:#C90016; float:left; color:#FFF; width:100%; text-align:center;\">You are not logged in!</span>";
 					},
@@ -123,48 +140,36 @@ $(document).ready(function() {
 
 
 		}
+		
 
 		function postGetRecommendations(value){
-			document.getElementById("notification").innerHTML = "";
-			var jsonData = JSON.parse(value);
-			
-			for (var i = 0; i < jsonData.length; i=i+2) {
-				var recommendationsTitle = jsonData[i];
-				var recommendations = jsonData[i+1];
-				console.log("String recommendations: "+recommendations.toString());
+		
+			if(value!==undefined && value!=="No Annotation" && value!=="No Annotations found!"){
+				document.getElementById("recommendation").innerHTML = "";
+				document.getElementById("notification").innerHTML = "";
+				var jsonData = JSON.parse(value);
+				
+				for (var i = 0; i < jsonData.length; i=i+2) {
+					var recommendationsTitle = jsonData[i];
+					var recommendations = jsonData[i+1];
+					//console.log("String recommendations: "+recommendations.toString());
 
-				//document.getElementById("recommendation").innerHTML += "<div style=\"cursor:pointer\" class=\"col-sm-2\" > <div class='square-box'> <div class='square-content'> <div> <span class=\"recommendspan\" data-info='"+recommendations+"'>"+recommendationsTitle+"</span> </div> </div> </div></div>";
-				
-				
-				document.getElementById("recommendation").innerHTML += "<a href=\"#\" class=\"list-group-item\"><span class=\"recommendspan\" data-info='"+recommendations+"'>"+recommendationsTitle+"</span></a>"
-				
-				
-				//"<div style=\"cursor:pointer\" class=\"col-sm-2\" > <div class='square-box'> <div class='square-content'> <div> <span class=\"recommendspan\" data-info='"+recommendations+"'>"+recommendationsTitle+"</span> </div> </div> </div></div>";
-				
+					document.getElementById("recommendation").innerHTML += "<a href=\"#\" class=\"list-group-item\"><span class=\"recommendspan\" data-info='"+recommendations+"'>"+recommendationsTitle+"</span></a>"
+				}
+				$(".list-group-item").click(function(event){
+
+					//console.log("data value: "+$(this).find('.recommendspan').attr('data-info'));
+					getVideosIntent($(this).find('.recommendspan').attr('data-info'));
+					//playVideos();
+
+				});
 			}
-			$(".list-group-item").click(function(event){
-
-				console.log("data value: "+$(this).find('.recommendspan').attr('data-info'));
-				
-				//document.getElementById("xmpp_status").innerHTML = "";
-				//document.getElementById("videonamedisplay").innerHTML = "";
-				//document.getElementById("videodisplay").innerHTML = "";
-				//document.getElementById("annotationdisplay").innerHTML = "";
-				//document.getElementById("map-canvas").style.display = "block";
-				//flushLists();
-				//valeur = 0;
-				//$('.progress-bar').css('width', valeur+'%').attr('aria-valuenow', valeur);
-				//postGetVideos($(this).find('.recommendspan').attr('data-info'));
-				getVideosIntent($(this).find('.recommendspan').attr('data-info'));
-				//playVideos();
-
-			});
 		}
 		
 		function getVideosIntent(value){
 
 			client = new iwc.Client();
-			console.log("Search widget: inside getVideosIntent");
+			//console.log("Search widget: inside getVideosIntent");
 
 			var intent = {
 				"component":"",
@@ -194,8 +199,8 @@ $(document).ready(function() {
 		
 		
 	} else {
-		console.log("not signed in...");
-		console.log(result);
+		//console.log("not signed in...");
+		//console.log(result);
 		$("#status").html("Do I know you?!");
 	}
   
